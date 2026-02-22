@@ -9,12 +9,24 @@ public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] private Button startButton = null;
     [SerializeField] private Button quitButton = null;
+
     [SerializeField] private GameObject videoPanel = null;
     [SerializeField] private VideoPlayer introVideo = null;
-    [SerializeField] private Image backgroundImage = null;
+
+    [SerializeField] private Image backgroundFrame = null;
+    //[SerializeField] private Image backgroundImage = null;
+    [SerializeField] private RawImage backgroundImage = null;
+    [SerializeField] private VideoPlayer menuBackgroundVideo = null;  // The looping background video player
+    
+    [SerializeField] private AudioSource menuMusic = null;             // Background music for the menu
+    [SerializeField] private AudioSource storyIntroMusic = null;            // Music during the intro/story video
+
+    [SerializeField] private GameObject TitleText = null;
 
     [SerializeField] private TitleDropAnimation titleDropAnimation = null;
     [SerializeField] private CanvasGroup buttonsGroup = null;    // Wrap buttons in a CanvasGroup
+
+
 
     private bool isIntroPlaying = false;
 
@@ -54,10 +66,31 @@ public class MainMenuUI : MonoBehaviour
 
     private void StartGame()
     {
+        // Stop button fade-in coroutine if still running
+        StopAllCoroutines();
+
+        // Stop menu music
+        if (menuMusic != null)
+        {
+            menuMusic.Stop();
+        }
+
         // Hide Main Menu UI
-        startButton.gameObject.SetActive(false);
-        quitButton.gameObject.SetActive(false);
-        if (backgroundImage != null) backgroundImage.gameObject.SetActive(false);
+        titleDropAnimation.gameObject.SetActive(false);
+        buttonsGroup.gameObject.SetActive(false);
+        TitleText.gameObject.SetActive(false);
+
+
+        // Stop and hide the menu background video
+        if (menuBackgroundVideo != null)
+        {
+            menuBackgroundVideo.Stop();
+        }
+        if (backgroundImage != null)
+        {
+            backgroundImage.gameObject.SetActive(false);
+        }
+        backgroundFrame.gameObject.SetActive(false);
 
         // Play Intro Video
         if (introVideo != null && introVideo.clip != null)
@@ -65,6 +98,12 @@ public class MainMenuUI : MonoBehaviour
             isIntroPlaying = true;
             videoPanel.SetActive(true);
             introVideo.Play();
+
+            // Play intro/story music
+            if (storyIntroMusic != null)
+            {
+                storyIntroMusic.Play();
+            }
         }
         else
         {
@@ -86,6 +125,13 @@ public class MainMenuUI : MonoBehaviour
     {
         isIntroPlaying = false;
         introVideo.Stop();
+
+        // Stop intro music
+        if (storyIntroMusic != null)
+        {
+            storyIntroMusic.Stop();
+        }
+
         SceneManager.LoadScene(Settings.PersistentScene);
     }
 
