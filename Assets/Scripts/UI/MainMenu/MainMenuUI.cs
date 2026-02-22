@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class MainMenuUI : MonoBehaviour
 {
@@ -12,10 +13,17 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private VideoPlayer introVideo = null;
     [SerializeField] private Image backgroundImage = null;
 
+    [SerializeField] private TitleDropAnimation titleDropAnimation = null;
+    [SerializeField] private CanvasGroup buttonsGroup = null;    // Wrap buttons in a CanvasGroup
+
     private bool isIntroPlaying = false;
 
     private void Start()
     {
+        // Hide buttons initially
+        buttonsGroup.alpha = 0f;
+        buttonsGroup.interactable = false;
+
         startButton.onClick.AddListener(StartGame);
         quitButton.onClick.AddListener(QuitGame);
 
@@ -27,6 +35,9 @@ public class MainMenuUI : MonoBehaviour
         {
             introVideo.loopPointReached += OnVideoEnd;
         }
+
+        // Start a coroutine to show buttons after title drops
+        StartCoroutine(ShowButtonsAfterDelay(titleDropAnimation.dropDuration + 0.2f));
     }
 
     private void Update()
@@ -81,5 +92,23 @@ public class MainMenuUI : MonoBehaviour
     private void QuitGame()
     {
         Application.Quit();
+    }
+
+    private IEnumerator ShowButtonsAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        float fadeDuration = 0.5f;
+        float elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            buttonsGroup.alpha = Mathf.Clamp01(elapsed / fadeDuration);
+            yield return null;
+        }
+
+        buttonsGroup.alpha = 1f;
+        buttonsGroup.interactable = true;
+        EventSystem.current.SetSelectedGameObject(startButton.gameObject);
     }
 }
