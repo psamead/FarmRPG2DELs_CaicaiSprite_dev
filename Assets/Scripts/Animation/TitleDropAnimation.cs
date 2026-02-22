@@ -12,6 +12,9 @@ public class TitleDropAnimation : MonoBehaviour
     private Vector2 startPosition;
     private float elapsedTime = 0f;
     private bool isAnimating = false;
+    private bool reachPosition = false;
+
+    public bool ReachPosition => reachPosition;
 
     private void Awake()
     {
@@ -58,6 +61,9 @@ public class TitleDropAnimation : MonoBehaviour
         {
             isAnimating = false;
             titleTransform.anchoredPosition = targetPosition;
+            reachPosition = true;
         }
+
+        reachPosition = false;
     }
 }
