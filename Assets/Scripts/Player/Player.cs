@@ -70,7 +70,23 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
     private GameObjectSave _gameObjectSave;
     public GameObjectSave GameObjectSave { get { return _gameObjectSave; } set { _gameObjectSave = value; } }
 
+    private bool _hasHat = false;
+    public bool HasHat { get => _hasHat; }
 
+    /// <summary>
+    /// Call this to give the player the hat. Updates the visual immediately.
+    /// </summary>
+    public void EquipHat()
+    {
+        _hasHat = true;
+
+        // Update hat visibility on the hat child object
+        PlayerHat playerHat = GetComponentInChildren<PlayerHat>();
+        if (playerHat != null)
+        {
+            playerHat.UpdateHatVisibility(true);
+        }
+    }
 
     protected override void Awake()
     {
@@ -979,6 +995,9 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
         // Add Player Direction to string dictionary
         sceneSave.stringDictionary.Add("playerDirection", playerDirection.ToString());
 
+        // Add Player Equip Hat to string dictionary
+        sceneSave.stringDictionary.Add("hasHat", _hasHat.ToString());
+
         // Add sceneSave data for player game object
         GameObjectSave.sceneData.Add(Settings.PersistentScene, sceneSave);
 
@@ -1016,6 +1035,18 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
                         {
                             playerDirection = direction;
                             SetPlayerDirection(playerDirection);
+                        }
+                    }
+
+                    // get player equip hat
+                    if (sceneSave.stringDictionary.TryGetValue("hasHat", out string hasHat))
+                    {
+                        _hasHat = bool.Parse(hasHat);
+
+                        // Restore hat visually if player had it
+                        if (_hasHat)
+                        {
+                            EquipHat();
                         }
                     }
                 }

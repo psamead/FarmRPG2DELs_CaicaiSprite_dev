@@ -1,0 +1,35 @@
+using UnityEngine;
+
+/// <summary>
+/// Attach this to the Miya NPC GameObject in Scene3_Cabin.
+/// When the player enters Miya's trigger collider, the player receives the cat hat.
+/// 
+/// Setup:
+/// 1. Attach this script to the Miya GameObject
+/// 2. Ensure Miya has a BoxCollider2D with "Is Trigger" checked
+/// 3. The Player must have a Rigidbody2D and Collider2D (it already does)
+/// </summary>
+public class MiyaNPCInteraction : MonoBehaviour
+{
+    [SerializeField] private string playerTag = "Player";
+
+    private bool hasGivenHat = false;
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (hasGivenHat) return;
+
+        if (other.CompareTag(playerTag))
+        {
+            Player player = other.GetComponent<Player>();
+
+            if (player != null && !player.HasHat)
+            {
+                player.EquipHat();
+                hasGivenHat = true;
+                Debug.Log("Miya gave the player a cat hat!");
+                //gameObject.SetActive(false);
+            }
+        }
+    }
+}
