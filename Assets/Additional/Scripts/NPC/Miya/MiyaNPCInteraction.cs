@@ -13,7 +13,7 @@ public class MiyaNPCInteraction : MonoBehaviour
 {
     [SerializeField] private string playerTag = "Player";
 
-    private bool hasGivenHat = false;
+    private bool transformToHat = false;
 
     private void Start()
     {
@@ -23,9 +23,10 @@ public class MiyaNPCInteraction : MonoBehaviour
         }
     }
 
+    // Handles the actual collision = player touches Miya ¡ú transforms to hat
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (hasGivenHat) return;
+        if (transformToHat) return;
 
         if (other.CompareTag(playerTag))
         {
@@ -34,9 +35,9 @@ public class MiyaNPCInteraction : MonoBehaviour
             if (player != null && !player.HasHat)
             {
                 player.EquipHat();
-                hasGivenHat = true;
+                transformToHat = true;
                 
-                gameObject.SetActive(false);
+                gameObject.SetActive(false);  // Miya becomes the hat!
             }
         }
     }

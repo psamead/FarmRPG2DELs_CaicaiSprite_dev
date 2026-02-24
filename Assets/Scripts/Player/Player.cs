@@ -73,6 +73,8 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
     private bool _hasHat = false;
     public bool HasHat { get => _hasHat; }
 
+    private Vector3 equippedItemPosition;
+
     /// <summary>
     /// Call this to give the player the hat. Updates the visual immediately.
     /// </summary>
@@ -110,6 +112,9 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
 
         // get reference to main camera
         mainCamera = Camera.main;
+
+        // get the equip item position
+        equippedItemPosition = equippedItemSpriteRenderer.transform.localPosition;
     }
 
     private void OnDisable()
@@ -939,6 +944,17 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
         {
             equippedItemSpriteRenderer.sprite = itemDetails.itemSprite;
             equippedItemSpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+          
+            //Debug.Log(equippedItemPosition);
+            // Move the held item lower (adjust Y offset as needed)
+            if (_hasHat == false)
+            {
+                equippedItemSpriteRenderer.transform.localPosition = new Vector3(0f, 1.1f, 0f);
+            }
+            else
+            {
+                equippedItemSpriteRenderer.transform.localPosition = equippedItemPosition;
+            }
 
             // Apply 'carry' character arms customization
             armsCharacterAttribute.partVariantType = PartVariantType.carry;
