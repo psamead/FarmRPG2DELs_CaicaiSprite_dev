@@ -9,12 +9,12 @@ using UnityEngine;
 public class PlayerHat : MonoBehaviour
 {
     private SpriteRenderer hatSpriteRenderer;
-    private Animator hatAnimator;
+    //private Animator hatAnimator;
 
     private void Awake()
     {
         hatSpriteRenderer = GetComponent<SpriteRenderer>();
-        hatAnimator = GetComponent<Animator>();
+        //hatAnimator = GetComponent<Animator>();
     }
 
     private void Start()
@@ -33,9 +33,9 @@ public class PlayerHat : MonoBehaviour
             hatSpriteRenderer.enabled = showHat;
         }
 
-        if (hatAnimator != null)
-        {
-            hatAnimator.enabled = showHat;
-        }
+        //if (hatAnimator != null)
+        //{
+        //    hatAnimator.enabled = showHat;
+        //}
     }
 }
