@@ -15,6 +15,14 @@ public class MiyaNPCInteraction : MonoBehaviour
 
     private bool hasGivenHat = false;
 
+    private void Start()
+    {
+        if (Player.Instance != null && Player.Instance.HasHat)
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (hasGivenHat) return;
@@ -27,8 +35,8 @@ public class MiyaNPCInteraction : MonoBehaviour
             {
                 player.EquipHat();
                 hasGivenHat = true;
-                Debug.Log("Miya gave the player a cat hat!");
-                //gameObject.SetActive(false);
+                
+                gameObject.SetActive(false);
             }
         }
     }
