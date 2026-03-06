@@ -5,16 +5,18 @@ using UnityEngine;
 public class MiyaAnimator : MonoBehaviour
 {
     private Animator miyaAnimator;
+    private string playerTag;
 
     private void Awake()
     {
         // Get the Animator from the parent (Miya)
         miyaAnimator = GetComponentInParent<Animator>();
+        playerTag = GetComponentInParent<MiyaNPCInteraction>().PlayerTag;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player") && miyaAnimator != null)
+        if (other.CompareTag(playerTag) && miyaAnimator != null)
         {
             miyaAnimator.enabled = true;  // Switch from static to animated
         }
@@ -23,7 +25,7 @@ public class MiyaAnimator : MonoBehaviour
     // Optional: stop animating when player walks away
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player") && miyaAnimator != null)
+        if (other.CompareTag(playerTag) && miyaAnimator != null)
         {
             miyaAnimator.enabled = false;  // Back to static sprite
         }
