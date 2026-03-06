@@ -11,7 +11,8 @@ using UnityEngine;
 /// </summary>
 public class MiyaNPCInteraction : MonoBehaviour
 {
-    [SerializeField] private string playerTag = "Player";
+    [SerializeField] private string _playerTag = "Player";
+    public string PlayerTag { get => _playerTag; }
 
     private bool transformToHat = false;
 
@@ -23,12 +24,12 @@ public class MiyaNPCInteraction : MonoBehaviour
         }
     }
 
-    // Handles the actual collision = player touches Miya ¡ú transforms to hat
+    // Handles the actual collision = player touches Miya -> transforms to hat
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (transformToHat) return;
 
-        if (other.CompareTag(playerTag))
+        if (other.CompareTag(_playerTag))
         {
             Player player = other.GetComponent<Player>();
 
