@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -189,7 +189,11 @@ public class Cursor : MonoBehaviour
 
     public Vector3 GetWorldPositionForCursor()
     {
-        Vector3 screenPosition = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0f);
+        // On mobile, use the last verified world touch position so the scythe/reaping
+        // cursor correctly maps to where the player tapped, not Input.mousePosition(0,0).
+        Vector3 screenPosition = MobileTouchRouter.LastValidWorldTapScreenPos != Vector3.zero
+            ? MobileTouchRouter.LastValidWorldTapScreenPos
+            : new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0f);
 
         Vector3 worldPosition = mainCamera.ScreenToWorldPoint(screenPosition);
 
@@ -198,7 +202,9 @@ public class Cursor : MonoBehaviour
 
     public Vector2 GetRectTransformPositionForCursor()
     {
-        Vector2 screenPosition = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+        Vector2 screenPosition = MobileTouchRouter.LastValidWorldTapScreenPos != Vector3.zero
+            ? (Vector2)MobileTouchRouter.LastValidWorldTapScreenPos
+            : new Vector2(Input.mousePosition.x, Input.mousePosition.y);
 
         return RectTransformUtility.PixelAdjustPoint(screenPosition, cursorRectTransform, canvas);
     }
