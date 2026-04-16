@@ -32,7 +32,7 @@ Porting this game to mobile involves three major pillars:
 *   **Movement (`Player.cs`):** Implement a Virtual Joystick HUD overlay to replace keyboard movement (`Horizontal`/`Vertical`).
 *   **Interactions (`Player.cs`, Tools, UIManager):** Map the specific PC `KeyCode` toggles (`T`, `G`, `Esc`, `LeftShift`) down to 4 distinct, easily accessible UI buttons on the new Mobile HUD.
 *   **Grid Targeting (Dual-Touch / Range Limited):** Implement a strict Multi-touch routing system. The Left thumb operates the Joystick (UI touch), while the Right thumb taps the world grid (World touch). Furthermore, tapping the world grid must be restricted to a specific max range (e.g., 10 grids). Taps outside this range must be clamped or rejected.
-*   **Inventory UI (`UIInventorySlot.cs`):** Refactor drag-and-drop to use native touch pointer events (`eventData.position`) instead of `Input.mousePosition`. Transition element tooltips from hover to tap/long-press interactions.
+*   **Inventory UI (`UIInventorySlot.cs`):** Revamp the system for mobile ergonomics: Inside the fullscreen Inventory Panel, users **Tap-to-Select** an item, then tap another slot to swap it (no dragging allowed). On the bottom in-game Hotbar, users **Tap-to-Select** their active tool, but can **Drag-and-Drop** non-tool items directly out of the hotbar to drop them into the world.
 
 ### Phase 3: UI & Resolution Scaling (Strict 1920x1080 / 5.5" Target)
 *   **Remove Hardcoded Resolution:** Remove `Screen.SetResolution(1920, 1080)` from `GameManager.cs` (line 12). Add `Application.targetFrameRate = 60;` (or target 30fps if the Snapdragon 820 gets too hot). Let Android manage its own window.
@@ -47,21 +47,18 @@ Porting this game to mobile involves three major pillars:
 
 ---
 
-## Critical Open Decisions
+## Finalized Architecture Decisions
 
-Before writing the new code, the following architectural decisions need to be finalized:
+Based on user feedback, the following core interaction rules are locked in:
 
-> [!WARNING]
-> **1. Targeting Range Constraints**
-> If a user taps far outside the 10-grid radius limit, should the green cursor clamp to the absolute maximum 10-grid edge pointing in that direction? Or should the game cleanly ignore the tap and flash an error?
+> [!NOTE]
+> **1. Targeting Constraints:** When tapping outside the 10-grid max range, the cursor will explicitly **clamp** to the 10-grid limit edge in the direction of the tap, rather than being ignored entirely.
 
-> [!WARNING]
-> **2. Interaction Fallback (Auto-Aim)**
-> Under the new system, if you do NOT tap the screen to place the cursor, but you press the core "Use Tool" button anyway, should the character swing their tool blindly at the tile directly in front of them?
+> [!NOTE]
+> **2. Interaction Fallback (Auto-Aim):** The character will **not** blindly swing a tool if the Action button is pressed without a targeted tile. This will only log a debug message for testing purposes.
 
-> [!WARNING]
-> **3. Platform Compatibility**
-> Should the new Dual-Touch Input code act as a wrapper to maintain simultaneous PC/Android support, or are we permanently severing the PC keyboard logic in favor of a standalone Android codebase?
+> [!NOTE]
+> **3. Platform Compatibility:** This project is branched as a **standalone Android codebase**. Old PC Keyboard/Mouse code will be aggressively stripped out rather than preserved via cross-platform wrappers.
 
 ---
 

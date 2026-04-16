@@ -165,23 +165,27 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
 
             PlayerWalkInput();
 
-            PlayerClickInput();
-
-            PlayerTestInput();
+            // PlayerClickInput() & PlayerTestInput() completely removed for Android.
+            // Tools are now invoked by MobileHUDManager firing MobileUseToolAction() directly.
 
             // Send event to any listeners for player movement input
-            EventHandler.CallMovementEvent(xInput, yInput, isWalking, isRunning, isIdle, isCarrying,
-                    toolEffect,
-                    isUsingToolRight, isUsingToolLeft, isUsingToolUp, isUsingToolDown,
-                    isLiftingToolRight, isLiftingToolLeft, isLiftingToolUp, isLiftingToolDown,
-                    isPickingRight, isPickingLeft, isPickingUp, isPickingDown,
-                    isSwingingToolRight, isSwingingToolLeft, isSwingingToolUp, isSwingingToolDown,
-                    false, false, false, false);
+            SendMovementEvent();
             
             UpdateSortingOrder();
         }
 
         #endregion Player Input
+    }
+
+    private void SendMovementEvent()
+    {
+        EventHandler.CallMovementEvent(xInput, yInput, isWalking, isRunning, isIdle, isCarrying,
+                toolEffect,
+                isUsingToolRight, isUsingToolLeft, isUsingToolUp, isUsingToolDown,
+                isLiftingToolRight, isLiftingToolLeft, isLiftingToolUp, isLiftingToolDown,
+                isPickingRight, isPickingLeft, isPickingUp, isPickingDown,
+                isSwingingToolRight, isSwingingToolLeft, isSwingingToolUp, isSwingingToolDown,
+                false, false, false, false);
     }
 
     private void FixedUpdate()
@@ -219,45 +223,57 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
 
     private void PlayerMovementInput()
     {
-        yInput = Input.GetAxisRaw("Vertical");
-        xInput = Input.GetAxisRaw("Horizontal");
-
-        if (yInput != 0 && xInput != 0)
+        if (VirtualJoystick.Instance != null && VirtualJoystick.Instance.gameObject.activeInHierarchy)
         {
-            xInput = xInput * 0.71f;
-            yInput = yInput * 0.71f;
+            xInput = VirtualJoystick.Instance.InputVector.x;
+            yInput = VirtualJoystick.Instance.InputVector.y;
+        }
+        else
+        {
+            xInput = 0;
+            yInput = 0;
         }
 
-        if (xInput != 0 || yInput != 0)
-        {
-            isRunning = true;
-            isWalking = false;
-            isIdle = false;
-            movementSpeed = Settings.runningSpeed;
+        Vector2 inputVec = new Vector2(xInput, yInput);
+        float magnitude = inputVec.magnitude;
 
-            // Capture player direction for save game
-            if (xInput < 0)
+        // Apply a small deadzone
+        if (magnitude > 0.05f)
+        {
+            isIdle = false;
+            
+            // Distinguish Walking vs Running strictly by analog joystick pull distance!
+            if (magnitude < 0.5f)
             {
-                playerDirection = Direction.left;
-            }
-            else if (xInput > 0)
-            {
-                playerDirection = Direction.right;
-            }
-            else if (yInput < 0)
-            {
-                playerDirection = Direction.down;
+                isRunning = false;
+                isWalking = true;
+                movementSpeed = Settings.walkingSpeed;
             }
             else
             {
-                playerDirection = Direction.up;
+                isRunning = true;
+                isWalking = false;
+                movementSpeed = Settings.runningSpeed;
+            }
+
+            // Capture player direction for animations/save game based on the dominant axis
+            if (Mathf.Abs(xInput) > Mathf.Abs(yInput))
+            {
+                playerDirection = xInput < 0 ? Direction.left : Direction.right;
+            }
+            else
+            {
+                playerDirection = yInput < 0 ? Direction.down : Direction.up;
             }
         }
-        else if (xInput == 0 && yInput == 0)
+        else
         {
             isRunning = false;
             isWalking = false;
             isIdle = true;
+            // Snap completely to zero 
+            xInput = 0;
+            yInput = 0;
         }
     }
 
@@ -295,43 +311,32 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
 
     private void PlayerWalkInput()
     {
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-        {
-            isRunning = false;
-            isWalking = true;
-            isIdle = false;
-            movementSpeed = Settings.walkingSpeed;
-        }
-        else
-        {
-            isRunning = true;
-            isWalking = false;
-            isIdle = false;
-            movementSpeed = Settings.runningSpeed;
-        }
+        // Explicitly removed for Android. 
+        // Walk/Run is now driven entirely by Joystick magnitude in PlayerMovementInput().
     }
 
-    private void PlayerClickInput()
+    public void MobileUseToolAction()
     {
         if (!playerToolUseDisabled)
         { 
-            if (Input.GetMouseButton(0))
+            if (gridCursor.CursorIsEnabled || cursor.CursorIsEnabled)
             {
-                if (gridCursor.CursorIsEnabled || cursor.CursorIsEnabled)
-                {
-                    // Get Cursor Grid Position
-                    Vector3Int cursorGridPosition = gridCursor.GetGridPositionForCursor();
+                // Get Cursor Grid Position
+                Vector3Int cursorGridPosition = gridCursor.GetGridPositionForCursor();
 
-                    // Get Player Grid Position
-                    Vector3Int playerGridPosition = gridCursor.GetGridPositionForPlayer();
+                // Get Player Grid Position
+                Vector3Int playerGridPosition = gridCursor.GetGridPositionForPlayer();
 
-                    ProcessPlayerClickInput(cursorGridPosition, playerGridPosition);            
-                }
+                ProcessPlayerClickInputWrapper(cursorGridPosition, playerGridPosition);
+        
+                // Critical: Since this happens via UI interaction, we must manually flush the
+                // newly-set animation variables to the animator BEFORE the next Update frame ignores them!
+                SendMovementEvent();
             }    
         }
     }
 
-    private void ProcessPlayerClickInput(Vector3Int cursorGridPosition, Vector3Int playerGridPosition)
+    private void ProcessPlayerClickInputWrapper(Vector3Int cursorGridPosition, Vector3Int playerGridPosition)
     {
         ResetMovement();
 
@@ -347,17 +352,11 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
             switch (itemDetails.itemType)
             {
                 case ItemType.Seed:
-                    if (Input.GetMouseButtonDown(0))
-                    {
-                        ProcessPlayerClickInputSeed(gridPropertyDetails, itemDetails);
-                    }
+                    ProcessPlayerClickInputSeed(gridPropertyDetails, itemDetails);
                     break;
 
                 case ItemType.Commodity:
-                    if (Input.GetMouseButtonDown(0))
-                    {
-                        ProcessPlayerClickInputCommodity(itemDetails);
-                    }
+                    ProcessPlayerClickInputCommodity(itemDetails);
                     break;
 
                 case ItemType.Watering_tool:
@@ -370,11 +369,7 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
                     break;
 
                 case ItemType.none:
-                    break;
-
                 case ItemType.count:
-                    break;
-
                 default:
                     break;
             }  
@@ -760,67 +755,64 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
 
     private void UseToolInPlayerDirection(ItemDetails equippedItemDetails, Vector3Int playerDirection)
     {
-        if (Input.GetMouseButton(0))
+        switch (equippedItemDetails.itemType)
         {
-            switch (equippedItemDetails.itemType)
-            {
-                case ItemType.Reaping_tool:
-                    if (playerDirection == Vector3Int.right)
-                    {
-                        isSwingingToolRight = true;
-                    }
-                    else if (playerDirection == Vector3Int.left)
-                    {
-                        isSwingingToolLeft = true;
-                    }
-                    else if (playerDirection == Vector3Int.up)
-                    {
-                        isSwingingToolUp = true;
-                    }
-                    else if (playerDirection == Vector3Int.down)
-                    {
-                        isSwingingToolDown = true;
-                    }
-                    break; 
-            }
-
-            // Define center point of square which will be used for collision testing
-            Vector2 point = new Vector2(GetPlayerCenterPosition().x + (playerDirection.x * (equippedItemDetails.itemUseRadius / 2f)), GetPlayerCenterPosition().y + playerDirection.y * (equippedItemDetails.itemUseRadius / 2f));
-
-            // Define size of the square which will be used for collision testing
-            Vector2 size = new Vector2(equippedItemDetails.itemUseRadius, equippedItemDetails.itemUseRadius);
-
-            // Get Item components with 2D collider located in the square at the center point defined (2d colliders tested limited to maxCollidersToTestPerPeapSwing)
-            Item[] itemArray = HelperMethods.GetComponentsAtBoxLocationNonAlloc<Item>(Settings.maxCollidersToTestPerReapSwing, point, size, 0f);
-
-            int reapableItemCount = 0;
-
-            // Loop through all items retrieved
-            for (int i = itemArray.Length - 1; i >= 0; i--)
-            {
-                if (itemArray[i] != null)
+            case ItemType.Reaping_tool:
+                if (playerDirection == Vector3Int.right)
                 {
-                    // Destroy item game object if reapable
-                    if (InventoryManager.Instance.GetItemDetails(itemArray[i].ItemCode).itemType == ItemType.Reapable_scenary)
-                    {
-                        // Effect position 
-                        Vector3 effectPosition = new Vector3(itemArray[i].transform.position.x, itemArray[i].transform.position.y + Settings.gridCellSize / 2f, itemArray[i].transform.position.z);
+                    isSwingingToolRight = true;
+                }
+                else if (playerDirection == Vector3Int.left)
+                {
+                    isSwingingToolLeft = true;
+                }
+                else if (playerDirection == Vector3Int.up)
+                {
+                    isSwingingToolUp = true;
+                }
+                else if (playerDirection == Vector3Int.down)
+                {
+                    isSwingingToolDown = true;
+                }
+                break; 
+        }
 
-                        // Trigger reaping effect
-                        EventHandler.CallHarvestActionEffectEvent(effectPosition, HarvestActionEffect.reaping);
+        // Define center point of square which will be used for collision testing
+        Vector2 point = new Vector2(GetPlayerCenterPosition().x + (playerDirection.x * (equippedItemDetails.itemUseRadius / 2f)), GetPlayerCenterPosition().y + playerDirection.y * (equippedItemDetails.itemUseRadius / 2f));
 
-                        //Play sound
-                        AudioManager.Instance.PlaySound(SoundName.effectScythe);
+        // Define size of the square which will be used for collision testing
+        Vector2 size = new Vector2(equippedItemDetails.itemUseRadius, equippedItemDetails.itemUseRadius);
 
-                        Destroy(itemArray[i].gameObject);
+        // Get Item components with 2D collider located in the square at the center point defined (2d colliders tested limited to maxCollidersToTestPerPeapSwing)
+        Item[] itemArray = HelperMethods.GetComponentsAtBoxLocationNonAlloc<Item>(Settings.maxCollidersToTestPerReapSwing, point, size, 0f);
 
-                        reapableItemCount++;
-                        if (reapableItemCount >= Settings.maxTargetComponentsToDestroyPerReapSwing)
-                            break;
-                    }
+        int reapableItemCount = 0;
+
+        // Loop through all items retrieved
+        for (int i = itemArray.Length - 1; i >= 0; i--)
+        {
+            if (itemArray[i] != null)
+            {
+                // Destroy item game object if reapable
+                if (InventoryManager.Instance.GetItemDetails(itemArray[i].ItemCode).itemType == ItemType.Reapable_scenary)
+                {
+                    // Effect position 
+                    Vector3 effectPosition = new Vector3(itemArray[i].transform.position.x, itemArray[i].transform.position.y + Settings.gridCellSize / 2f, itemArray[i].transform.position.z);
+
+                    // Trigger reaping effect
+                    EventHandler.CallHarvestActionEffectEvent(effectPosition, HarvestActionEffect.reaping);
+
+                    //Play sound
+                    AudioManager.Instance.PlaySound(SoundName.effectScythe);
+
+                    Destroy(itemArray[i].gameObject);
+
+                    reapableItemCount++;
+                    if (reapableItemCount >= Settings.maxTargetComponentsToDestroyPerReapSwing)
+                        break;
                 }
             }
-        }   
+        }
     }
 
     /// <summary>
@@ -902,31 +894,7 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
     /// </summary>
     private void PlayerTestInput()
     {
-        // Trigger Advance Time
-        if (Input.GetKey(KeyCode.T))
-        {
-            TimeManager.Instance.TestAdvanceGameMinute();
-        }
-
-        // Trigger Advance Day
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-            TimeManager.Instance.TestAdvanceGameDay();
-        }
-
-        // Test scene unload / load
-        //if (Input.GetKeyDown(KeyCode.L))
-        //{
-        //    SceneControllerManager.Instance.FadeAndLoadScene(SceneName.Scene1_Farm.ToString(), transform.position);
-        //}
-
-        // Test object pool
-        //if (Input.GetMouseButtonDown(1))
-        //{
-        //    GameObject tree = PoolManager.Instance.ReuseObject(canyonOakTreePrefab, mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, 
-        //        Input.mousePosition.y, -mainCamera.transform.position.z)), Quaternion.identity);
-        //    tree.SetActive(true);
-        //}
+        // Removed for Android
     }
 
     private void ResetMovement()
@@ -945,13 +913,7 @@ public class Player : SingletonMonobehavior<Player>, ISaveable
         ResetMovement();
 
         // Send event to any listeners for player movement input
-        EventHandler.CallMovementEvent(xInput, yInput, isWalking, isRunning, isIdle, isCarrying,
-                toolEffect,
-                isUsingToolRight, isUsingToolLeft, isUsingToolUp, isUsingToolDown,
-                isLiftingToolRight, isLiftingToolLeft, isLiftingToolUp, isLiftingToolDown,
-                isPickingRight, isPickingLeft, isPickingUp, isPickingDown,
-                isSwingingToolRight, isSwingingToolLeft, isSwingingToolUp, isSwingingToolDown,
-                false, false, false, false);
+        SendMovementEvent();
     }
 
     public void DisablePlayerInput()

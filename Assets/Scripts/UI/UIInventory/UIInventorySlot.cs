@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -183,6 +183,14 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     {
         if (itemDetails != null)
         {
+            // Restrict dragging natively to non-tool items (prevents accidental dropping of core tools)
+            if (itemDetails.itemType == ItemType.Watering_tool || itemDetails.itemType == ItemType.Breaking_tool ||
+                itemDetails.itemType == ItemType.Chopping_tool || itemDetails.itemType == ItemType.Hoeing_tool ||
+                itemDetails.itemType == ItemType.Reaping_tool || itemDetails.itemType == ItemType.Collecting_tool)
+            {
+                return;
+            }
+
             // Disable keyboard input
             Player.Instance.DisablePlayerInputAndResetMovement();
 
@@ -268,6 +276,9 @@ public class UIInventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         // Populate text box with item details
         if (itemQuantity != 0)
         {
+            // Safeguard: Destroy any currently floating textbox before instantiating a new one
+            DestroyInventoryTextBox();
+
             // Instantiate inventory text box
             inventoryBar.inventoryTextBoxGameobject = Instantiate(inventoryTextBoxPrefab, transform.position, Quaternion.identity);
             inventoryBar.inventoryTextBoxGameobject.transform.SetParent(parentCanvas.transform, false);

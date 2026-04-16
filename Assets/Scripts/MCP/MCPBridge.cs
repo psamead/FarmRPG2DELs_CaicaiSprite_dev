@@ -68,7 +68,7 @@ public class MCPBridge : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError($"[MCPBridge] Failed to start server: {e.Message}");
+            Debug.LogWarning($"[MCPBridge] Server previously bound or port {port} in use. This is normal during Play/Edit mode transitions. ({e.Message})");
             StopServer();
         }
     }

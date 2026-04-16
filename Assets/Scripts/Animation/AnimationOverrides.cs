@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 
@@ -83,6 +83,10 @@ public class AnimationOverrides : MonoBehaviour
             // Apply animation updates to animation override controller and then update animator with the new controller
             aoc.ApplyOverrides(animsKeyValuePairList);
             currentAnimator.runtimeAnimatorController = aoc;
+            
+            // Force animator to sync immediately so UI-triggered events
+            // don't lose their triggers to deferred controller re-initialization!
+            currentAnimator.Update(0f);
         }
 
         // s1.Stop();

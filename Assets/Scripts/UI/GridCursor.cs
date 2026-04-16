@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -304,8 +304,25 @@ public class GridCursor : MonoBehaviour
 
     public Vector3Int GetGridPositionForCursor()
     {
-        Vector3 worldPosition = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -mainCamera.transform.position.z));  // z is how far the objects are in front of the camera - camera is at -10 so objects are (-)-10 in front = 10
-        return grid.WorldToCell(worldPosition);
+        Vector2 screenPos = Input.mousePosition;
+
+        // Route touches through our Android Dual-Touch system instead of the raw mouse position
+        if (MobileTouchRouter.Instance != null && MobileTouchRouter.Instance.gameObject.activeInHierarchy)
+        {
+            screenPos = MobileTouchRouter.LastValidWorldTapScreenPos;
+        }
+
+        Vector3 worldPosition = mainCamera.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -mainCamera.transform.position.z));
+        Vector3Int rawGridPos = grid.WorldToCell(worldPosition);
+
+        // Clamp the targeting cursor dynamically to a maximum radius of 10 grids from the player
+        Vector3Int playerGridPos = GetGridPositionForPlayer();
+        Vector3Int offset = rawGridPos - playerGridPos;
+
+        offset.x = Mathf.Clamp(offset.x, -10, 10);
+        offset.y = Mathf.Clamp(offset.y, -10, 10);
+
+        return playerGridPos + offset;
     }
 
     public Vector3Int GetGridPositionForPlayer()

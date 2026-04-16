@@ -46,10 +46,42 @@ public class CutsceneVideoPlayer : MonoBehaviour
         }
         Instance = this;
 
-        // Ensure the panel starts hidden
+        // Enforce full-stretch on the Manager itself in case it was created as a default 100x100 square
+        RectTransform myRT = GetComponent<RectTransform>();
+        if (myRT != null)
+        {
+            myRT.anchorMin = Vector2.zero;
+            myRT.anchorMax = Vector2.one;
+            myRT.offsetMin = Vector2.zero;
+            myRT.offsetMax = Vector2.zero;
+        }
+
+        // Ensure the panel starts hidden and enforce full-stretch anchors for Android
         if (cutscenePanel != null)
         {
             cutscenePanel.SetActive(false);
+            
+            RectTransform panelRT = cutscenePanel.GetComponent<RectTransform>();
+            if (panelRT != null)
+            {
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+            }
+        }
+
+        // Enforce stretch on RawImage as well to guarantee full screen playback
+        if (videoRawImage != null)
+        {
+            RectTransform rawRT = videoRawImage.GetComponent<RectTransform>();
+            if (rawRT != null)
+            {
+                rawRT.anchorMin = Vector2.zero;
+                rawRT.anchorMax = Vector2.one;
+                rawRT.offsetMin = Vector2.zero;
+                rawRT.offsetMax = Vector2.zero;
+            }
         }
 
         // Ensure we have an AudioSource for BGM
@@ -110,6 +142,12 @@ public class CutsceneVideoPlayer : MonoBehaviour
 
         videoPlayer.Play();
 
+        // Hide Mobile HUD if it exists
+        if (MobileHUDManager.Instance != null)
+        {
+            MobileHUDManager.Instance.SetCutsceneVisibility(true);
+        }
+
         // Play optional background music
         if (bgmClip != null && bgmAudioSource != null)
         {
@@ -143,6 +181,12 @@ public class CutsceneVideoPlayer : MonoBehaviour
         if (Player.Instance != null)
         {
             Player.Instance.PlayerInputIsDisabled = false;
+        }
+
+        // Un-hide Mobile HUD if it exists
+        if (MobileHUDManager.Instance != null)
+        {
+            MobileHUDManager.Instance.SetCutsceneVisibility(false);
         }
 
         // Fire callback (e.g. Miya hat transformation)

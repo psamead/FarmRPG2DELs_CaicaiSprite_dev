@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : SingletonMonobehavior<UIManager>
@@ -42,7 +42,15 @@ public class UIManager : SingletonMonobehavior<UIManager>
         }
     }
 
-    private void EnablePauseMenu()
+    public void TogglePauseMenu()
+    {
+        if (PauseMenuOn)
+            DisablePauseMenu();
+        else
+            EnablePauseMenu();
+    }
+
+    public void EnablePauseMenu()
     {
         // Destroy any currently dragged items
         uiInventoryBar.DestroyCurrentlyDraggedItems();
@@ -54,6 +62,10 @@ public class UIManager : SingletonMonobehavior<UIManager>
         Player.Instance.PlayerInputIsDisabled = true;
         Time.timeScale = 0;
         pauseMenu.SetActive(true);
+
+        // Hide joystick and gameplay buttons on mobile
+        if (MobileHUDManager.Instance != null)
+            MobileHUDManager.Instance.SetPauseMenuMode(true);
 
         // Trigger garbage collector 
         System.GC.Collect();
@@ -71,6 +83,10 @@ public class UIManager : SingletonMonobehavior<UIManager>
         Player.Instance.PlayerInputIsDisabled = false;
         Time.timeScale = 1;
         pauseMenu.SetActive(false);
+
+        // Restore joystick and gameplay buttons on mobile
+        if (MobileHUDManager.Instance != null)
+            MobileHUDManager.Instance.SetPauseMenuMode(false);
     }
 
     private void HighlightButtonForSelectedTab()

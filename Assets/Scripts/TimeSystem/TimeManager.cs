@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -179,26 +179,53 @@ public class TimeManager : SingletonMonobehavior<TimeManager>, ISaveable
 
     //TODO:Remove
     /// <summary>
-    /// Advance 1 game minute
+    /// Advance 1 game hour (60 minutes) — fast enough for mobile use
     /// </summary>
     public void TestAdvanceGameMinute()
     {
-        for (int i = 0; i < 60; i++)
+        // Advance by a full hour (much more noticeable than 1 minute)
+        for (int i = 0; i < 3600; i++)
         {
             UpdateGameSecond();
-        }    
+        }
     }
 
     //TODO:Remove
     /// <summary>
-    /// Advance 1 day
+    /// Advance 1 day by directly setting state (no freeze)
     /// </summary>
     public void TestAdvanceGameDay()
     {
-        for (int i = 0; i < 86400; i++)
+        // Directly advance the day to avoid iterating 86400 UpdateGameSecond calls
+        gameSecond = 0;
+        gameMinute = 30;
+        gameHour = 6;
+        gameDay++;
+
+        if (gameDay > 30)
         {
-            UpdateGameSecond();
+            gameDay = 1;
+
+            int gs = (int)gameSeason;
+            gs++;
+            gameSeason = (Season)gs;
+
+            if (gs > 3)
+            {
+                gs = 0;
+                gameSeason = (Season)gs;
+                gameYear++;
+                if (gameYear > 9999) { gameYear = 1; }
+                EventHandler.CallAdvanceGameYearEvent(gameYear, gameSeason, gameDay, gameDayOfWeek, gameHour, gameMinute, gameSecond);
+            }
+
+            EventHandler.CallAdvanceGameSeasonEvent(gameYear, gameSeason, gameDay, gameDayOfWeek, gameHour, gameMinute, gameSecond);
         }
+
+        gameDayOfWeek = GetDayOfWeek();
+        EventHandler.CallAdvanceGameDayEvent(gameYear, gameSeason, gameDay, gameDayOfWeek, gameHour, gameMinute, gameSecond);
+        EventHandler.CallAdvanceGameHourEvent(gameYear, gameSeason, gameDay, gameDayOfWeek, gameHour, gameMinute, gameSecond);
+        EventHandler.CallAdvanceGameMinuteEvent(gameYear, gameSeason, gameDay, gameDayOfWeek, gameHour, gameMinute, gameSecond);
     }
 
     public void ISaveableRegister()

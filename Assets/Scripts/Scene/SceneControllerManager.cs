@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -75,6 +75,21 @@ public class SceneControllerManager : SingletonMonobehavior<SceneControllerManag
         // Restore new scene data
         SaveLoadManager.Instance.RestoreCurrentSceneData();
 
+        // Automatically Show/Hide Mobile HUD based on scene
+#if UNITY_2020_1_OR_NEWER
+        MobileHUDManager[] huds = FindObjectsOfType<MobileHUDManager>(true);
+#else
+        MobileHUDManager[] huds = Resources.FindObjectsOfTypeAll<MobileHUDManager>();
+#endif
+        bool isGameplayScene = Enum.TryParse<SceneName>(sceneName, out _);
+        foreach (MobileHUDManager hud in huds)
+        {
+            if (hud.gameObject.scene.isLoaded) // exclude prefabs
+            {
+                hud.gameObject.SetActive(isGameplayScene);
+            }
+        }
+
         // Start fading back in and wait for it to finish before exiting the function.
         yield return StartCoroutine(Fade(0f));
 
@@ -123,6 +138,21 @@ public class SceneControllerManager : SingletonMonobehavior<SceneControllerManag
         EventHandler.CallAfterSceneLoadEvent();
 
         SaveLoadManager.Instance.RestoreCurrentSceneData();
+
+        // Automatically Show/Hide Mobile HUD based on scene
+#if UNITY_2020_1_OR_NEWER
+        MobileHUDManager[] huds = FindObjectsOfType<MobileHUDManager>(true);
+#else
+        MobileHUDManager[] huds = Resources.FindObjectsOfTypeAll<MobileHUDManager>();
+#endif
+        bool startingIsGameplay = Enum.TryParse<SceneName>(startingSceneName.ToString(), out _);
+        foreach (MobileHUDManager hud in huds)
+        {
+            if (hud.gameObject.scene.isLoaded) // exclude prefabs
+            {
+                hud.gameObject.SetActive(startingIsGameplay);
+            }
+        }
 
         // Once the scene is finished loading, start fading in.
         StartCoroutine(Fade(0f));

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PauseMenuInventoryManagement : MonoBehaviour
@@ -10,6 +10,8 @@ public class PauseMenuInventoryManagement : MonoBehaviour
     [SerializeField] private Sprite transparent16x16 = null;
 
     [HideInInspector] public GameObject inventoryTextBoxGameobject;
+
+    public int selectedSlotIndexForSwap = -1;
 
     private void OnEnable()
     {
@@ -27,6 +29,7 @@ public class PauseMenuInventoryManagement : MonoBehaviour
         EventHandler.InventoryUpdatedEvent -= PopulatePlayerInventory;
 
         DestroyInventoryTextBoxGameobject();
+        selectedSlotIndexForSwap = -1;
     }
 
     public void DestroyInventoryTextBoxGameobject()
@@ -40,14 +43,8 @@ public class PauseMenuInventoryManagement : MonoBehaviour
 
     public void DestroyCurrentlyDraggedItems()
     {
-        // loop through all player inventory items
-        for (int i = 0; i < InventoryManager.Instance.inventoryLists[(int)InventoryLocation.player].Count; i++)
-        {
-            if (inventoryManagementSlot[i].draggedItem != null)
-            {
-                Destroy(inventoryManagementSlot[i].draggedItem);
-            }
-        }
+        // Dragging has been removed from the Pause Menu for mobile port.
+        // Method retained to avoid breaking UIManager.cs callbacks.
     }
 
     private void PopulatePlayerInventory(InventoryLocation inventoryLocation, List<InventoryItem> playerInventoryList)
@@ -82,6 +79,7 @@ public class PauseMenuInventoryManagement : MonoBehaviour
             inventoryManagementSlot[i].itemDetails = null;
             inventoryManagementSlot[i].itemQuantity = 0;
             inventoryManagementSlot[i].inventoryManagementSlotImage.sprite = transparent16x16;
+            inventoryManagementSlot[i].inventoryManagementSlotImage.color = Color.white;
             inventoryManagementSlot[i].textMeshProUGUI.text = "";
         }
 

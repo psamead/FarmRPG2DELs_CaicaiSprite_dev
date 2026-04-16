@@ -1,9 +1,9 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class PauseMenuInventoryManagementSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
+public class PauseMenuInventoryManagementSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     public Image inventoryManagementSlotImage;
     public TextMeshProUGUI textMeshProUGUI;
@@ -15,8 +15,6 @@ public class PauseMenuInventoryManagementSlot : MonoBehaviour, IBeginDragHandler
     [HideInInspector] public int itemQuantity;
     [SerializeField] private int slotNumber = 0;
 
-    // private Vector3 startingPosition;
-    public GameObject draggedItem;
     private Canvas parentCanvas;
 
     private void Awake()
@@ -24,47 +22,37 @@ public class PauseMenuInventoryManagementSlot : MonoBehaviour, IBeginDragHandler
         parentCanvas = GetComponentInParent<Canvas>();
     }
 
-    public void OnBeginDrag(PointerEventData eventData)
+    public void OnPointerClick(PointerEventData eventData)
     {
-        if (itemQuantity != 0)
+        if (eventData.button == PointerEventData.InputButton.Left)
         {
-            // Instatiate gameobject as dragged item
-            draggedItem = Instantiate(inventoryManagement.inventoryManagementDraggedItemPrefab, inventoryManagement.transform);
-
-            // Get image for dragged item
-            Image draggedItemImage = draggedItem.GetComponentInChildren<Image>();
-            draggedItemImage.sprite = inventoryManagementSlotImage.sprite;
-        }
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        // move game object as dragged item
-        if (draggedItem != null)
-        {
-            draggedItem.transform.position = Input.mousePosition;
-        }
-    }
-
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        // Destroy game object as dragged item
-        if (draggedItem != null)
-        {
-            Destroy(draggedItem);
-
-            // Get object drag is over
-            if (eventData.pointerCurrentRaycast.gameObject != null && eventData.pointerCurrentRaycast.gameObject.GetComponent<PauseMenuInventoryManagementSlot>() != null)
+            if (inventoryManagement.selectedSlotIndexForSwap == -1) 
             {
-                // get the slot number where the drag ended
-                int toSlotNumber = eventData.pointerCurrentRaycast.gameObject.GetComponent<PauseMenuInventoryManagementSlot>().slotNumber;
-
-                // Swap inventory items in inventory list
-                InventoryManager.Instance.SwapInventoryItems(InventoryLocation.player, slotNumber, toSlotNumber);
-
-                // Destroy inventory text box
-                inventoryManagement.DestroyInventoryTextBoxGameobject();
-            }        
+                // Select this slot for swapping if it's not empty
+                if (itemQuantity != 0) 
+                {
+                    inventoryManagement.selectedSlotIndexForSwap = slotNumber;
+                    // Darken image to indicate selection
+                    inventoryManagementSlotImage.color = new Color(0.5f, 0.5f, 0.5f, 1f); 
+                }
+            }
+            else 
+            {
+                // We already have a selected slot. If it's this exact slot, deselect!
+                if (inventoryManagement.selectedSlotIndexForSwap == slotNumber)
+                {
+                    inventoryManagement.selectedSlotIndexForSwap = -1;
+                    inventoryManagementSlotImage.color = Color.white;
+                }
+                else
+                {
+                    // Swap! The PopulatePlayerInventory will naturally clear the color tint when it rebuilds slots
+                    InventoryManager.Instance.SwapInventoryItems(InventoryLocation.player, inventoryManagement.selectedSlotIndexForSwap, slotNumber);
+                    inventoryManagement.selectedSlotIndexForSwap = -1;
+                    
+                    inventoryManagement.DestroyInventoryTextBoxGameobject();
+                }
+            }
         }
     }
 
@@ -73,6 +61,9 @@ public class PauseMenuInventoryManagementSlot : MonoBehaviour, IBeginDragHandler
         // Populate text box with item details
         if (itemQuantity != 0)
         {
+            // Safeguard: Destroy any currently floating textbox before instantiating a new one
+            inventoryManagement.DestroyInventoryTextBoxGameobject();
+
             // Instantiate inventory text box
             inventoryManagement.inventoryTextBoxGameobject = Instantiate(inventoryTextBoxPrefab, transform.position, Quaternion.identity);
             inventoryManagement.inventoryTextBoxGameobject.transform.SetParent(parentCanvas.transform, false);
